@@ -1,9 +1,12 @@
 import { useFonts } from "expo-font";
-import { SplashScreen, Stack, useRouter } from "expo-router";
-import { useEffect } from "react";
-import { TouchableOpacity } from "react-native-gesture-handler";
-import { SafeAreaView, Text, View } from "react-native";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { Provider } from "react-redux";
+import store from "@/redux/store";
 export { ErrorBoundary } from "expo-router";
+import * as SQLite from "expo-sqlite";
+import { StyleSheet, View, Text } from "react-native";
+import GalleryDatabase from "@/helpers/DbHelper";
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -32,11 +35,28 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <Provider store={store}>
+      <RootLayoutNav />
+    </Provider>
+  );
 }
-
 function RootLayoutNav() {
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    GalleryDatabase.init();
+    GalleryDatabase.getGallery();
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading ...</Text>
+      </View>
+    );
+  }
 
   return (
     <Stack>
@@ -44,3 +64,12 @@ function RootLayoutNav() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

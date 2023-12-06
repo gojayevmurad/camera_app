@@ -1,8 +1,15 @@
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Stack } from "expo-router";
 import CameraHeader from "@/components/CameraHeader";
-import { Camera, CameraType, FlashMode } from "expo-camera";
+import { AutoFocus, Camera, CameraType, FlashMode } from "expo-camera";
+import { useAppDispatch } from "@/redux/store";
+import { addImage } from "@/redux/cameraSlice";
+import { FileHelper } from "@/helpers/FileHelper";
+import * as FileSystem from "expo-file-system";
+import Paths from "@/constants/Paths";
+import GalleryDatabase from "@/helpers/DbHelper";
+import Slider from "@react-native-community/slider";
 
 const Page = () => {
   const cameraRef = useRef<Camera>(null);
@@ -10,7 +17,7 @@ const Page = () => {
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [flashMode, setFlashMode] = useState<FlashMode>(FlashMode.auto);
-  const [uri, setUri] = useState<string | null>(null);
+  const [focusDepth, setFocusDepth] = useState(0);
 
   if (!permission) {
     return <View></View>;
@@ -33,7 +40,10 @@ const Page = () => {
     }
     const photo = await cameraRef.current.takePictureAsync();
 
-    setUri(photo.uri);
+    const fileName = `image-${Date.now()}.jpeg`;
+
+    FileHelper.saveFile(photo.uri, fileName);
+    GalleryDatabase.addMedia(fileName);
   };
 
   return (
@@ -56,6 +66,8 @@ const Page = () => {
           style={styles.camera}
           type={type}
           flashMode={flashMode}
+          autoFocus={AutoFocus.off}
+          focusDepth={focusDepth}
         />
         <View
           style={{
@@ -80,8 +92,16 @@ const Page = () => {
               backgroundColor: "#fff",
             }}
           />
+          <Slider
+            style={{ width: 200, height: 40 }}
+            minimumValue={0}
+            maximumValue={1}
+            onValueChange={(value) => setFocusDepth(value)}
+            step={0.05}
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="#000000"
+          />
         </View>
-        {uri && <Image width={400} height={400} source={{ uri: uri }} />}
       </View>
     </View>
   );
